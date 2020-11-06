@@ -1,0 +1,5 @@
+# idea files
+.idea
+
+# node js modules
+node_modules
