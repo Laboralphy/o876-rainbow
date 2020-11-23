@@ -169,8 +169,8 @@ class Rainbow {
     }
 
     static int32(xData) {
-        let x = Rainbow.parse(xData);
-        return xData.r || (xData.g << 8) || (xData.b << 16) || (xData.a << 24);
+        const x = Rainbow.parse(xData);
+        return x.r || (x.g << 8) || (x.b << 16) || (x.a << 24);
     }
 
     /**
@@ -335,6 +335,12 @@ class Rainbow {
         return {r, g, b, a};
     }
 
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     * @private
+     */
     static _buildRGBAFromStructure(oData) {
         let s1 = 'rgb';
         let s2 = oData.r.toString() + ', ' + oData.g.toString() + ', ' + oData.b.toString();

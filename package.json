@@ -1,10 +1,11 @@
 {
+  "type": "module",
   "name": "o876-rainbow",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jasmine ./tests/RainbowTest.mjs"
   },
   "repository": {
     "type": "git",
@@ -16,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/Laboralphy/o876-rainbow/issues"
   },
-  "homepage": "https://github.com/Laboralphy/o876-rainbow#readme"
+  "homepage": "https://github.com/Laboralphy/o876-rainbow#readme",
+  "devDependencies": {
+    "jasmine": "^3.6.3"
+  }
 }
