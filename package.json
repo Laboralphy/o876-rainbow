@@ -11,8 +11,8 @@
     "type": "git",
     "url": "git+https://github.com/Laboralphy/o876-rainbow.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["color", "html", "gradient", "color parsing"],
+  "author": "Raphaël Marandet",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Laboralphy/o876-rainbow/issues"
