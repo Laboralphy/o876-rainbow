@@ -1,4 +1,4 @@
-import Rainbow from '../src/index.mjs';
+import Rainbow from '../src/Rainbow.js';
 
 describe('#parse', function() {
     it('should parse 3 digit color code', function() {

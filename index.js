@@ -1,2 +1,2 @@
-import Rainbow from './src/Rainbow';
-export default Rainbow;
+const Rainbow = require('./src/Rainbow.js');
+module.exports = Rainbow;
