@@ -1,8 +1,8 @@
 {
   "type": "module",
-  "name": "o876-rainbow",
+  "name": "@laboralphy/rainbow",
   "version": "1.0.0",
-  "description": "",
+  "description": "This package provides functions for parsing, structuring colors and generating gradients, adjusting brightness, converting to grayscale.",
   "main": "index.js",
   "scripts": {
     "test": "jasmine ./tests/RainbowTest.mjs"
