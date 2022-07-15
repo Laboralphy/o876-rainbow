@@ -233,8 +233,6 @@ class Rainbow {
         let c1 = Rainbow.parse(sColor1);
         let c2 = Rainbow.parse(sColor2);
 
-        let nSecur = 100;
-
         function getMedian(x1, x2) {
             if (x1 === undefined) {
                 throw new Error('first color is undefined');
@@ -253,9 +251,6 @@ class Rainbow {
         function fillArray(a, x1, x2, n1, n2) {
             let m = getMedian(x1, x2);
             let n = (n1 + n2) >> 1;
-            if (--nSecur < 0) {
-                return a;
-            }
             if (Math.abs(n1 - n2) > 1) {
                 fillArray(a, x1, m, n1, n);
                 fillArray(a, m, x2, n, n2);
