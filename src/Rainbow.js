@@ -157,6 +157,16 @@ const COLORS = {
     yellowgreen : '#9ACD32'
 };
 
+/**
+ * @typedef RGBAStruct {object}
+ * @property r {number}
+ * @property g {number}
+ * @property b {number}
+ * @property a {number}
+ *
+ * @typedef AnyColor {RGBAStruct|number|string}
+ */
+
 class Rainbow {
 
     /**
@@ -168,14 +178,21 @@ class Rainbow {
         return Rainbow._buildRGBAFromStructure(Rainbow.parse(xData));
     }
 
+    /**
+     * Transforme une couleur en entier 32bits
+     * @param xData
+     * @returns {number}
+     */
     static int32(xData) {
         const x = Rainbow.parse(xData);
-        return x.r || (x.g << 8) || (x.b << 16) || (x.a << 24);
+        return x.r | (x.g << 8) | (x.b << 16) | (x.a << 24);
     }
 
     /**
      * Analyse une valeur d'entrée pour construire une structure avec les
      * composantes "r", "g", "b", et eventuellement "a".
+     * @param xData {AnyColor}
+     * @return {RGBAStruct}
      */
     static parse(xData) {
         if (typeof xData === "object") {
@@ -227,7 +244,10 @@ class Rainbow {
 
     /**
      * Génère un spectre entre deux valeurs de couleurs
-     * La fonction renvoi
+     * @param sColor1 {AnyColor}
+     * @param sColor2 {AnyColor}
+     * @param nSteps {number}
+     * @return {RGBAStruct[]}
      */
     static spectrum(sColor1, sColor2, nSteps) {
         let c1 = Rainbow.parse(sColor1);
@@ -267,7 +287,8 @@ class Rainbow {
 
     /**
      * Generate a gradient
-     * @param oPalette palette definition
+     * @param oPalette {object} palette definition
+     * @return {RGBAStruct[]}
      *
      * {
      * 		start: value,
@@ -306,6 +327,12 @@ class Rainbow {
         return aPalette;
     }
 
+    /**
+     * Transforme un code couleur 32bits en structure rgba
+     * @param n {number}
+     * @returns {RGBAStruct}
+     * @private
+     */
     static _buildStructureFromInt(n) {
         let a = (n >> 24) & 0xFF;
         let b = (n >> 16) & 0xFF;
@@ -314,6 +341,12 @@ class Rainbow {
         return {r, g, b, a};
     }
 
+    /**
+     * Transforme un code couleur en string (repr. CSS) en structure rgba
+     * @param s {string}
+     * @returns {RGBAStruct}
+     * @private
+     */
     static _buildStructureFromString3(s) {
         let r = parseInt('0x' + s[0] + s[0]);
         let g = parseInt('0x' + s[1] + s[1]);
@@ -322,6 +355,12 @@ class Rainbow {
         return {r, g, b, a};
     }
 
+    /**
+     * Transforme un code couleur en string (repr. CSS) en structure rgba
+     * @param s {string}
+     * @returns {RGBAStruct}
+     * @private
+     */
     static _buildStructureFromString6(s) {
         let r = parseInt('0x' + s[0] + s[1]);
         let g = parseInt('0x' + s[2] + s[3]);
@@ -346,6 +385,12 @@ class Rainbow {
         return s1 + '(' + s2 + ')';
     }
 
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     * @private
+     */
     static _buildString3FromStructure(oData) {
         let sr = ((oData.r >> 4) & 0xF).toString(16);
         let sg = ((oData.g >> 4) & 0xF).toString(16);
@@ -353,10 +398,21 @@ class Rainbow {
         return sr + sg + sb;
     }
 
+    /**
+     * Clamps a value between 0 and 255
+     * @param n {number}
+     * @returns {number}
+     */
     static byte(n) {
         return Math.min(255, Math.max(0, n | 0));
     }
 
+    /**
+     * Adjust brightness of input color
+     * @param color {AnyColor}
+     * @param f {number} brightness factor
+     * @returns {RGBAStruct}
+     */
     static brightness(color, f) {
         let c = Rainbow.parse(color);
         c.r = Rainbow.byte(f * c.r);
@@ -365,6 +421,11 @@ class Rainbow {
         return c;
     }
 
+    /**
+     * Turns a color into grayscale
+     * @param color {AnyColor}
+     * @returns {RGBAStruct}
+     */
     static grayscale(color) {
         let c = Rainbow.parse(color);
         let n = Math.round((c.r * 30 + c.g * 59 + c.b * 11) / 100);
