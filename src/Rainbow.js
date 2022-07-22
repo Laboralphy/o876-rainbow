@@ -228,11 +228,11 @@ class Rainbow {
                 default:
                     let rx = xData.match(/^rgb\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *\)$/);
                     if (rx) {
-                        return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0};
+                        return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: 255};
                     } else {
                         rx = xData.match(/^rgba\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([.0-9]+) *\)$/);
                         if (rx) {
-                            return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: parseFloat(rx[4])};
+                            return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: Math.floor(255 * parseFloat(rx[4]))};
                         } else {
                             throw new Error('invalid color structure ' + xData);
                         }
@@ -380,7 +380,7 @@ class Rainbow {
         let s2 = oData.r.toString() + ', ' + oData.g.toString() + ', ' + oData.b.toString();
         if ('a' in oData) {
             s1 += 'a';
-            s2 += ', ' + oData.a.toString();
+            s2 += ', ' + (oData.a / 255).toString();
         }
         return s1 + '(' + s2 + ')';
     }
