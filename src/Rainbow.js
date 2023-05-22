@@ -196,33 +196,12 @@ export class Color {
     }
 }
 
-/**
- * @author https://github.com/30-seconds/30-seconds-of-code/blob/master/snippets/js/s/rgb-to-hsl.md
- * @param r
- * @param g
- * @param b
- * @returns {{h: number, s: number: l: number}}
- * @constructor
- */
-export function convertRGBToHSL (r, g, b) {
-    r /= 255
-    g /= 255
-    b /= 255
-    const l = Math.max(r, g, b)
-    const s = l - Math.min(r, g, b)
-    const h = s
-        ? l === r
-            ? (g - b) / s
-            : l === g
-                ? 2 + (b - r) / s
-                : 4 + (r - g) / s
-        : 0
-    return {
-        h: 60 * h < 0 ? 60 * h + 360 : 60 * h,
-        s: 100 * (s ? (l <= 0.5 ? s / (2 * l - s) : s / (2 - (2 * l - s))) : 0),
-        l: (100 * (2 * l - s)) / 2
-    }
-}
+
+
+const REGEXP_RGB = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/
+const REGEXP_RGBA = /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d+(?:\.\d+)?)\s*\)$/
+const REGEXP_HSL = /^hsl\(\s*(\d+(?:\.\d+)?)(deg|rad|)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)$/
+const REGEXP_HSLA = /^hsl\(\s*(\d+(?:\.\d+)?)(deg|rad|)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)\s*\)$/
 
 /**
  * @typedef RGBAStruct {object}
@@ -243,6 +222,47 @@ export class Rainbow {
      */
     static rgba(xData) {
         return Rainbow.buildRGBAFromStructure(Rainbow.parse(xData));
+    }
+
+    /**
+     * @author https://github.com/30-seconds/30-seconds-of-code/blob/master/snippets/js/s/rgb-to-hsl.md
+     * @param r
+     * @param g
+     * @param b
+     * @returns {{h: number, s: number: l: number}}
+     */
+    static convertRGBToHSL (r, g, b) {
+        r /= 255
+        g /= 255
+        b /= 255
+        const l = Math.max(r, g, b)
+        const s = l - Math.min(r, g, b)
+        const h = s
+            ? l === r
+                ? (g - b) / s
+                : l === g
+                    ? 2 + (b - r) / s
+                    : 4 + (r - g) / s
+            : 0
+        return {
+            h: 60 * h < 0 ? 60 * h + 360 : 60 * h,
+            s: 100 * (s ? (l <= 0.5 ? s / (2 * l - s) : s / (2 - (2 * l - s))) : 0),
+            l: (100 * (2 * l - s)) / 2
+        }
+    }
+
+    static convertHSLToRGB (h, s, l) {
+        s /= 100;
+        l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n =>
+            l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return {
+            r: Math.floor(255 * f(0)),
+            g: Math.floor(255 * f(8)),
+            b: Math.floor(255 * f(4))
+        }
     }
 
     /**
@@ -293,17 +313,28 @@ export class Rainbow {
                     }
 
                 default:
-                    let rx = xData.match(/^rgb\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *\)$/);
+                    let rx = xData.match(REGEXP_RGB);
                     if (rx) {
                         return new Color({r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: 255});
-                    } else {
-                        rx = xData.match(/^rgba\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([.0-9]+) *\)$/);
-                        if (rx) {
-                            return new Color({r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: Math.floor(255 * parseFloat(rx[4]))});
-                        } else {
-                            throw new Error('invalid color structure ' + xData);
-                        }
                     }
+                    rx = xData.match(REGEXP_RGBA)
+                    if (rx) {
+                        return new Color({
+                            r: parseFloat(rx[1]),
+                            g: parseFloat(rx[2]),
+                            b: parseFloat(rx[3]),
+                            a: Math.floor(255 * parseFloat(rx[4]))
+                        });
+                    }
+                    rx = xData.match(REGEXP_HSL)
+                    if (rx) {
+                        return new Color(Rainbow.convertHSLToRGB(
+                            parseFloat(rx[1]),
+                            parseFloat(rx[3]),
+                            parseFloat(rx[4])
+                        ))
+                    }
+                    throw new Error('invalid color structure ' + xData);
             }
         }
         throw new Error('could not parse this thing : ' + JSON.stringify(xData));
@@ -406,12 +437,12 @@ export class Rainbow {
     }
 
     static buildHSLFromStructure(color) {
-        const { h, s, l } = convertRGBToHSL(color.r, color.g, color.b)
+        const { h, s, l } = Rainbow.convertRGBToHSL(color.r, color.g, color.b)
         return `hsl(${h}deg, ${s}%, ${l}%)`
     }
 
     static buildHSLAFromStructure(color) {
-        const { h, s, l } = convertRGBToHSL(color.r, color.g, color.b)
+        const { h, s, l } = Rainbow.convertRGBToHSL(color.r, color.g, color.b)
         const a = color.a / 255
         return `hsla(${h}deg, ${s}%, ${l}%, ${a})`
     }

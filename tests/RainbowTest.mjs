@@ -42,7 +42,21 @@ describe('#int32', function() {
         expect(Rainbow.int32('rgba(0, 0, 0, 0)')).toBe(0)
     })
     it('should return a number value with full alpha', function () {
-        expect(Rainbow.int32('rgba(8, 7, 1, 1)')).toBe(0xFF010708 | 0)
+        expect(Rainbow.int32('rgba(88, 7, 1, 1)')).toBe(0xFF010758 | 0)
     })
 })
 
+describe('hsl', function () {
+    it ('should return red when parsing hsl 0, 100, 50', function () {
+        const sColor1 = 'hsl(0, 100%, 50%)'
+        const sColor2 = '#ff0000'
+        const oColor3 = Rainbow.parse(sColor1)
+        expect(oColor3.hex()).toBe(sColor2)
+    })
+    it ('should return green when parsing hsl 0, 100, 50', function () {
+        const sColor1 = 'hsl(90, 100%, 50%)'
+        const sColor2 = '#7fff00'
+        const oColor3 = Rainbow.parse(sColor1)
+        expect(oColor3.hex()).toBe(sColor2)
+    })
+})
