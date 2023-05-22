@@ -157,6 +157,52 @@ const COLORS = {
     yellowgreen : '#9ACD32'
 };
 
+export class Color {
+    constructor({ r, b, g, a = 255 }) {
+        this.r = r
+        this.g = g
+        this.b = b
+        this.a = a
+    }
+
+    hex (n = 6) {
+        switch (n) {
+            case 3: {
+                return Rainbow.buildString3FromStructure(this)
+            }
+            case 6: {
+                return Rainbow.buildString6FromStructure(this)
+            }
+            case 8: {
+                return Rainbow.buildString8FromStructure(this)
+            }
+        }
+    }
+
+    rgba () {
+        return Rainbow.buildRGBAFromStructure(this)
+    }
+
+    rgb () {
+        return Rainbow.buildRGBFromStructure(this)
+    }
+
+    hsl () {
+        return Rainbow.buildHSLFromStructure(this)
+    }
+
+    hsla () {
+        return Rainbow.buildHSLAFromStructure(this)
+    }
+}
+
+
+
+const REGEXP_RGB = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/
+const REGEXP_RGBA = /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d+(?:\.\d+)?)\s*\)$/
+const REGEXP_HSL = /^hsl\(\s*(\d+(?:\.\d+)?)(deg|rad|)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)$/
+const REGEXP_HSLA = /^hsl\(\s*(\d+(?:\.\d+)?)(deg|rad|)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)\s*\)$/
+
 /**
  * @typedef RGBAStruct {object}
  * @property r {number}
@@ -167,7 +213,7 @@ const COLORS = {
  * @typedef AnyColor {RGBAStruct|number|string}
  */
 
-class Rainbow {
+export class Rainbow {
 
     /**
      * Fabrique une chaine de caractère représentant une couleur au format CSS
@@ -175,7 +221,48 @@ class Rainbow {
      * @return code couleur CSS au format rgb(r, g, b) ou rgba(r, g, b, a)
      */
     static rgba(xData) {
-        return Rainbow._buildRGBAFromStructure(Rainbow.parse(xData));
+        return Rainbow.buildRGBAFromStructure(Rainbow.parse(xData));
+    }
+
+    /**
+     * @author https://github.com/30-seconds/30-seconds-of-code/blob/master/snippets/js/s/rgb-to-hsl.md
+     * @param r
+     * @param g
+     * @param b
+     * @returns {{h: number, s: number: l: number}}
+     */
+    static convertRGBToHSL (r, g, b) {
+        r /= 255
+        g /= 255
+        b /= 255
+        const l = Math.max(r, g, b)
+        const s = l - Math.min(r, g, b)
+        const h = s
+            ? l === r
+                ? (g - b) / s
+                : l === g
+                    ? 2 + (b - r) / s
+                    : 4 + (r - g) / s
+            : 0
+        return {
+            h: 60 * h < 0 ? 60 * h + 360 : 60 * h,
+            s: 100 * (s ? (l <= 0.5 ? s / (2 * l - s) : s / (2 - (2 * l - s))) : 0),
+            l: (100 * (2 * l - s)) / 2
+        }
+    }
+
+    static convertHSLToRGB (h, s, l) {
+        s /= 100;
+        l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n =>
+            l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return {
+            r: Math.floor(255 * f(0)),
+            g: Math.floor(255 * f(8)),
+            b: Math.floor(255 * f(4))
+        }
     }
 
     /**
@@ -192,13 +279,13 @@ class Rainbow {
      * Analyse une valeur d'entrée pour construire une structure avec les
      * composantes "r", "g", "b", et eventuellement "a".
      * @param xData {AnyColor}
-     * @return {RGBAStruct}
+     * @return {Color}
      */
     static parse(xData) {
         if (typeof xData === "object") {
-            return xData;
+            return xData instanceof Color ? xData : new Color(xData);
         } else if (typeof xData === "number") {
-            return Rainbow._buildStructureFromInt(xData);
+            return Rainbow.buildStructureFromInt(xData);
         } else if (typeof xData === "string") {
             xData = xData.toLowerCase();
             if (xData in COLORS) {
@@ -206,40 +293,193 @@ class Rainbow {
             }
             switch (xData.length) {
                 case 3:
-                    return Rainbow._buildStructureFromString3(xData);
+                    return Rainbow.buildStructureFromString3(xData);
 
                 case 4:
                     if (xData[0] === '#') {
-                        return Rainbow._buildStructureFromString3(xData.substr(1));
+                        return Rainbow.buildStructureFromString3(xData.substr(1));
                     } else {
                         throw new Error('invalid color structure');
                     }
 
                 case 6:
-                    return Rainbow._buildStructureFromString6(xData);
+                    return Rainbow.buildStructureFromString6(xData);
 
                 case 7:
                     if (xData[0] === '#') {
-                        return Rainbow._buildStructureFromString6(xData.substr(1));
+                        return Rainbow.buildStructureFromString6(xData.substr(1));
                     } else {
                         throw new Error('invalid color structure');
                     }
 
                 default:
-                    let rx = xData.match(/^rgb\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *\)$/);
+                    let rx = xData.match(REGEXP_RGB);
                     if (rx) {
-                        return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: 255};
-                    } else {
-                        rx = xData.match(/^rgba\( *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([0-9]{1,3}) *, *([.0-9]+) *\)$/);
-                        if (rx) {
-                            return {r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: Math.floor(255 * parseFloat(rx[4]))};
-                        } else {
-                            throw new Error('invalid color structure ' + xData);
-                        }
+                        return new Color({r: rx[1] | 0, g: rx[2] | 0, b: rx[3] | 0, a: 255});
                     }
+                    rx = xData.match(REGEXP_RGBA)
+                    if (rx) {
+                        return new Color({
+                            r: parseFloat(rx[1]),
+                            g: parseFloat(rx[2]),
+                            b: parseFloat(rx[3]),
+                            a: Math.floor(255 * parseFloat(rx[4]))
+                        });
+                    }
+                    rx = xData.match(REGEXP_HSL)
+                    if (rx) {
+                        return new Color(Rainbow.convertHSLToRGB(
+                            parseFloat(rx[1]),
+                            parseFloat(rx[3]),
+                            parseFloat(rx[4])
+                        ))
+                    }
+                    throw new Error('invalid color structure ' + xData);
             }
         }
         throw new Error('could not parse this thing : ' + JSON.stringify(xData));
+    }
+
+    /**
+     * Transforme un code couleur 32bits en structure rgba
+     * @param n {number}
+     * @returns {Color}
+     */
+    static buildStructureFromInt(n) {
+        let a = (n >> 24) & 0xFF;
+        let b = (n >> 16) & 0xFF;
+        let g = (n >> 8) & 0xFF;
+        let r = n & 0xFF;
+        return new Color({r, g, b, a});
+    }
+
+    /**
+     * Transforme un code couleur en string (repr. CSS) en structure rgba
+     * @param s {string}
+     * @returns {Color}
+     */
+    static buildStructureFromString3(s) {
+        let r = parseInt('0x' + s[0] + s[0]);
+        let g = parseInt('0x' + s[1] + s[1]);
+        let b = parseInt('0x' + s[2] + s[2]);
+        let a = 255;
+        return new Color({r, g, b, a});
+    }
+
+    /**
+     * Transforme un code couleur en string (repr. CSS) en structure rgba
+     * @param s {string}
+     * @returns {Color}
+     */
+    static buildStructureFromString6(s) {
+        let r = parseInt('0x' + s[0] + s[1]);
+        let g = parseInt('0x' + s[2] + s[3]);
+        let b = parseInt('0x' + s[4] + s[5]);
+        let a = 255;
+        return new Color({r, g, b, a});
+    }
+
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     */
+    static buildRGBAFromStructure(oData) {
+        let s1 = 'rgb';
+        let s2 = oData.r.toString() + ', ' + oData.g.toString() + ', ' + oData.b.toString();
+        if ('a' in oData) {
+            s1 += 'a';
+            s2 += ', ' + (oData.a / 255).toString();
+        }
+        return s1 + '(' + s2 + ')';
+    }
+    static buildRGBFromStructure(oData) {
+        let s1 = 'rgb';
+        let s2 = oData.r.toString() + ', ' + oData.g.toString() + ', ' + oData.b.toString();
+        return s1 + '(' + s2 + ')';
+    }
+
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     */
+    static buildString3FromStructure(oData) {
+        let sr = ((oData.r >> 4) & 0xF).toString(16);
+        let sg = ((oData.g >> 4) & 0xF).toString(16);
+        let sb = ((oData.b >> 4) & 0xF).toString(16);
+        return '#' + sr + sg + sb;
+    }
+
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     */
+    static buildString6FromStructure(oData) {
+        let sr = (oData.r & 0xFF).toString(16).padStart(2, '0');
+        let sg = (oData.g & 0xFF).toString(16).padStart(2, '0');
+        let sb = (oData.b & 0xFF).toString(16).padStart(2, '0');
+        return '#' + sr + sg + sb;
+    }
+
+    /**
+     * Convert a {r, g, b, a} structure into a css string
+     * @param oData {{r: number, g: number, b: number, a: number}}
+     * @returns {string}
+     */
+    static buildString8FromStructure(oData) {
+        let sr = (oData.r & 0xFF).toString(16).padStart(2, '0');
+        let sg = (oData.g & 0xFF).toString(16).padStart(2, '0');
+        let sb = (oData.b & 0xFF).toString(16).padStart(2, '0');
+        let sa = (oData.a & 0xFF).toString(16).padStart(2, '0');
+        return '#' + sr + sg + sb + sa;
+    }
+
+    static buildHSLFromStructure(color) {
+        const { h, s, l } = Rainbow.convertRGBToHSL(color.r, color.g, color.b)
+        return `hsl(${h}deg, ${s}%, ${l}%)`
+    }
+
+    static buildHSLAFromStructure(color) {
+        const { h, s, l } = Rainbow.convertRGBToHSL(color.r, color.g, color.b)
+        const a = color.a / 255
+        return `hsla(${h}deg, ${s}%, ${l}%, ${a})`
+    }
+
+    /**
+     * Clamps a value between 0 and 255
+     * @param n {number}
+     * @returns {number}
+     */
+    static byte(n) {
+        return Math.min(255, Math.max(0, n | 0));
+    }
+
+    /**
+     * Adjust brightness of input color
+     * @param color {AnyColor}
+     * @param f {number} brightness factor
+     * @returns {Color}
+     */
+    static brightness(color, f) {
+        let c = Rainbow.parse(color);
+        c.r = Rainbow.byte(f * c.r);
+        c.g = Rainbow.byte(f * c.g);
+        c.b = Rainbow.byte(f * c.b);
+        return new Color(c);
+    }
+
+    /**
+     * Turns a color into grayscale
+     * @param color {AnyColor}
+     * @returns {Color}
+     */
+    static grayscale(color) {
+        let c = Rainbow.parse(color);
+        let n = Math.round((c.r * 30 + c.g * 59 + c.b * 11) / 100);
+        c.r = c.g = c.b = n;
+        return new Color(c);
     }
 
     /**
@@ -281,7 +521,7 @@ class Rainbow {
         }
 
         return fillArray([], c1, c2, 0, nSteps - 1).map(function(c) {
-            return Rainbow.rgba(c);
+            return Rainbow.parse(c);
         }, this);
     }
 
@@ -319,118 +559,13 @@ class Rainbow {
             if (sLastColor !== null) {
                 aPalette = aPalette.concat(Rainbow.spectrum(sLastColor, sColor, nPal - nLastPal + 1).slice(1));
             } else {
-                aPalette[nPal] = Rainbow.rgba(sColor);
+                aPalette[nPal] = Rainbow.parse(sColor);
             }
             sLastColor = sColor;
             nLastPal = nPal;
         }
         return aPalette;
     }
-
-    /**
-     * Transforme un code couleur 32bits en structure rgba
-     * @param n {number}
-     * @returns {RGBAStruct}
-     * @private
-     */
-    static _buildStructureFromInt(n) {
-        let a = (n >> 24) & 0xFF;
-        let b = (n >> 16) & 0xFF;
-        let g = (n >> 8) & 0xFF;
-        let r = n & 0xFF;
-        return {r, g, b, a};
-    }
-
-    /**
-     * Transforme un code couleur en string (repr. CSS) en structure rgba
-     * @param s {string}
-     * @returns {RGBAStruct}
-     * @private
-     */
-    static _buildStructureFromString3(s) {
-        let r = parseInt('0x' + s[0] + s[0]);
-        let g = parseInt('0x' + s[1] + s[1]);
-        let b = parseInt('0x' + s[2] + s[2]);
-        let a = 255;
-        return {r, g, b, a};
-    }
-
-    /**
-     * Transforme un code couleur en string (repr. CSS) en structure rgba
-     * @param s {string}
-     * @returns {RGBAStruct}
-     * @private
-     */
-    static _buildStructureFromString6(s) {
-        let r = parseInt('0x' + s[0] + s[1]);
-        let g = parseInt('0x' + s[2] + s[3]);
-        let b = parseInt('0x' + s[4] + s[5]);
-        let a = 255;
-        return {r, g, b, a};
-    }
-
-    /**
-     * Convert a {r, g, b, a} structure into a css string
-     * @param oData {{r: number, g: number, b: number, a: number}}
-     * @returns {string}
-     * @private
-     */
-    static _buildRGBAFromStructure(oData) {
-        let s1 = 'rgb';
-        let s2 = oData.r.toString() + ', ' + oData.g.toString() + ', ' + oData.b.toString();
-        if ('a' in oData) {
-            s1 += 'a';
-            s2 += ', ' + (oData.a / 255).toString();
-        }
-        return s1 + '(' + s2 + ')';
-    }
-
-    /**
-     * Convert a {r, g, b, a} structure into a css string
-     * @param oData {{r: number, g: number, b: number, a: number}}
-     * @returns {string}
-     * @private
-     */
-    static _buildString3FromStructure(oData) {
-        let sr = ((oData.r >> 4) & 0xF).toString(16);
-        let sg = ((oData.g >> 4) & 0xF).toString(16);
-        let sb = ((oData.b >> 4) & 0xF).toString(16);
-        return sr + sg + sb;
-    }
-
-    /**
-     * Clamps a value between 0 and 255
-     * @param n {number}
-     * @returns {number}
-     */
-    static byte(n) {
-        return Math.min(255, Math.max(0, n | 0));
-    }
-
-    /**
-     * Adjust brightness of input color
-     * @param color {AnyColor}
-     * @param f {number} brightness factor
-     * @returns {RGBAStruct}
-     */
-    static brightness(color, f) {
-        let c = Rainbow.parse(color);
-        c.r = Rainbow.byte(f * c.r);
-        c.g = Rainbow.byte(f * c.g);
-        c.b = Rainbow.byte(f * c.b);
-        return c;
-    }
-
-    /**
-     * Turns a color into grayscale
-     * @param color {AnyColor}
-     * @returns {RGBAStruct}
-     */
-    static grayscale(color) {
-        let c = Rainbow.parse(color);
-        let n = Math.round((c.r * 30 + c.g * 59 + c.b * 11) / 100);
-        c.r = c.g = c.b = n;
-        return c;
-    }
 }
+
 export default Rainbow;
