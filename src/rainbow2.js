@@ -1,17 +1,23 @@
 /**
  *
- * @typedef ColorType {number|string}
+ * @typedef ColorNumber {number}
+ *
+ * @typedef ColorType {ColorNumber|string}
+ *
+ *
  */
 
+import htmlColorCodes from './html-color-codes.json' with { type: 'json' };
 
 const REGEXP_SHTML3 = /^#([a-f0-9])([a-f0-9])([a-f0-9])$/
 const REGEXP_SHTML6 = /^#([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})$/
-const REGEXP_RGB = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/
+const REGEXP_RGB = /^rgb\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/
 const REGEXP_HSL = /^hsl\(\s*(\d+(?:\.\d+)?)(deg|rad|)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)$/
 
 /**
- * Transforms a string (reprensenting a color hex triplet) into a number RRGGBB
- * @param sInput
+ * Transforms a string (representing a color hex triplet) into a number RRGGBB
+ * @param sInput {ColorType}
+ * @return {ColorNumber}
  */
 function parseHexString(sInput) {
     let x
@@ -46,8 +52,9 @@ function parseRGBString(sInput) {
 function parseHSLString(sInput) {
     const x = sInput.match(REGEXP_HSL)
     if (x) {
-        const [, h, s, l] = x
-        return _convertHSLToRGB(h, s, l)
+        let [, h, unit, s, l] = x
+        h = parseFloat(h) * (unit === 'rad' ? (180 / Math.PI) : 1)
+        return _convertHSLToRGB(h, parseFloat(s), parseFloat(l))
     } else {
         throw new Error('Could not parse HSL string : ' + sInput)
     }
@@ -69,10 +76,13 @@ function _convertRGBToHSL(nColor) {
                 ? 2 + (b - r) / s
                 : 4 + (r - g) / s
         : 0;
+    const hue = 60 * h < 0 ? 60 * h + 360 : 60 * h;
+    const saturation = 100 * (s ? (l <= 0.5 ? s / (2 * l - s) : s / (2 - (2 * l - s))) : 0);
+    const luminance = (100 * (2 * l - s)) / 2;
     return {
-        h: 60 * h < 0 ? 60 * h + 360 : 60 * h,
-        s: 100 * (s ? (l <= 0.5 ? s / (2 * l - s) : s / (2 - (2 * l - s))) : 0),
-        l: (100 * (2 * l - s)) / 2
+        hue,
+        saturation,
+        luminance
     };
 }
 
@@ -92,13 +102,16 @@ function _convertHSLToRGB(h, s, l) {
 /**
  * Parse a color from css or hex notation to a number version of the color
  * @param input {ColorType}
- * @returns {ColorType}
+ * @returns {ColorNumber}
  */
-function parse(input) {
+export function parse(input) {
     const sType = typeof input
     if (sType === 'number') {
         return input
     } else if (sType === 'string') {
+        if (input in htmlColorCodes) {
+            return parseRGBString(htmlColorCodes[input]);
+        }
         const c = input.charAt(0)
         switch (c) {
             case 'r': {
@@ -123,9 +136,9 @@ function parse(input) {
 /**
  * Computes a new color of an input color, with brightness modification
  * @param input {ColorType}
- * @returns {ColorType}
+ * @returns {ColorNumber}
  */
-function brightness (input, f) {
+export function brightness (input, f) {
     let nColor = parse(input);
     let r = nColor >> 16 & 0xff;
     let g = nColor >> 8 & 0xff;
@@ -139,9 +152,9 @@ function brightness (input, f) {
 /**
  * Computes a grayscaled color of an input color
  * @param input {ColorType}
- * @returns {ColorType}
+ * @returns {ColorNumber}
  */
-function grayscale(input) {
+export function grayscale(input) {
     let c = parse(input);
     let r = c >> 16 & 0xff;
     let g = c >> 8 & 0xff;
@@ -151,13 +164,26 @@ function grayscale(input) {
     return r << 16 | g << 8 | b;
 }
 
+export function hueRotate (input, angle) {
+    const c = parse(input);
+    let { hue, saturation, luminance } = _convertRGBToHSL(c)
+    hue += angle;
+    while (hue < 0) {
+        hue += 360;
+    }
+    while (hue >= 360) {
+        hue -= 360;
+    }
+    return _convertHSLToRGB(hue, saturation, luminance);
+}
+
 /**
  * Computes a color between 2 other colors
  * @param x1 {ColorType}
  * @param x2 {ColorType}
- * @returns {ColorType}
+ * @returns {ColorNumber}
  */
-function getMedian(x1, x2) {
+export function getMedian(x1, x2) {
     const c1 = parse(x1);
     const c2 = parse(x2);
     const r1 = c1 >> 16 & 0xff
@@ -176,9 +202,9 @@ function getMedian(x1, x2) {
  * @param sColor1 {ColorType}
  * @param sColor2 {ColorType}
  * @param nSteps {number}
- * @returns {ColorType[]}
+ * @returns {ColorNumber[]}
  */
-function spectrum (sColor1, sColor2, nSteps) {
+export function spectrum (sColor1, sColor2, nSteps) {
     let c1 = parse(sColor1);
     let c2 = parse(sColor2);
 
@@ -202,9 +228,9 @@ function spectrum (sColor1, sColor2, nSteps) {
 /**
  * Creates a palette out of a map of (index, color)
  * @param aStops {Map<number, ColorType> | { index: number, color: ColorType }[]}
- * @returns {ColorType[]}
+ * @returns {ColorNumber[]}
  */
-function createPalette (aStops) {
+export function createPalette (aStops) {
     if (!aStops.every(s => (typeof s.index === 'number') && ('color' in s))) {
         throw new Error('Invalid palette input structure (need { index: number, color }[])')
     }
@@ -227,20 +253,28 @@ function createPalette (aStops) {
     return aPalette;
 }
 
-function renderHexString (input) {
+/**
+ *
+ * @param n {number}
+ * @private
+ */
+function _renderHexByte (n) {
+    const s = n.toString(16)
+    return n < 16 ? ('0' + s) : s
+}
+
+export function toHex (input) {
     const c = parse(input);
     const r = c >> 16 & 0xff;
     const g = c >> 8 & 0xff;
     const b = c & 0xff;
-    return r < 16 ? '0' : r.toString(16)
-        ? r < 16 ? '0' : r.toString(16)
+    return '#' + _renderHexByte(r) + _renderHexByte(g) + _renderHexByte(b)
 }
 
-module.exports = {
-    parse,
-    brightness,
-    grayscale,
-    getMedian,
-    spectrum,
-    createPalette
+export function toRGB (input) {
+    const c = parse(input);
+    const r = c >> 16 & 0xff;
+    const g = c >> 8 & 0xff;
+    const b = c & 0xff;
+    return `rgb(${r},${g},${b})`;
 }
