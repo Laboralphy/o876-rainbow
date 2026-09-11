@@ -1,24 +1,73 @@
 {
-  "type": "module",
   "name": "@laboralphy/rainbow",
-  "version": "2.0.0",
-  "description": "This package provides functions for parsing, structuring colors and generating gradients, adjusting brightness, converting to grayscale.",
-  "main": "index.js",
-  "scripts": {
-    "test": "jasmine ./tests/RainbowTest.mjs"
+  "version": "3.0.0",
+  "description": "This package provides functions for parsing, structuring colors and generating gradients.",
+  "author": "Raphaël Marandet",
+  "license": "ISC",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "prepublishOnly": "npm run check && npm run build"
+  },
+  "keywords": [
+    "color",
+    "html",
+    "gradient",
+    "color parsing"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Laboralphy/o876-rainbow.git"
   },
-  "keywords": ["color", "html", "gradient", "color parsing"],
-  "author": "Raphaël Marandet",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/Laboralphy/o876-rainbow/issues"
   },
   "homepage": "https://github.com/Laboralphy/o876-rainbow#readme",
   "devDependencies": {
-    "jasmine": "^3.6.3"
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
   }
 }
